@@ -14,6 +14,40 @@ export interface NaverAdsErrorContext {
   rawBody?: string | undefined;
 }
 
+export const REDACTED = '***';
+
+/**
+ * 자격증명이 너무 짧으면 응답 본문의 평범한 단어와 겹쳐 멀쩡한 메시지를
+ * 훼손한다. 실제 발급값은 수십 자라 이 경계에 걸리지 않는다.
+ */
+const MIN_REDACTABLE_LENGTH = 8;
+
+export function redactSecrets(text: string, secrets: readonly string[]): string;
+export function redactSecrets(
+  text: string | undefined,
+  secrets: readonly string[],
+): string | undefined;
+/**
+ * 에러 메시지에서 자격증명을 지운다.
+ *
+ * 네이버는 인증 실패 시 `API-KEY 'xxx' is invalid.`처럼 **보낸 키를 응답 본문에
+ * 그대로 되돌려준다.** 이 문자열은 툴 결과로 모델 컨텍스트에 들어가고 로그에도
+ * 남으므로, 에러로 감싸기 전에 가린다.
+ */
+export function redactSecrets(
+  text: string | undefined,
+  secrets: readonly string[],
+): string | undefined {
+  if (text === undefined) return undefined;
+
+  let out = text;
+  for (const secret of secrets) {
+    if (secret.length < MIN_REDACTABLE_LENGTH) continue;
+    out = out.split(secret).join(REDACTED);
+  }
+  return out;
+}
+
 /** 네이버 검색광고 API가 2xx 이외를 반환했을 때 던진다. */
 export class NaverAdsApiError extends Error {
   readonly method: HttpMethod;
@@ -74,8 +108,10 @@ export class NaverAdsTransportError extends Error {
   readonly method: HttpMethod;
   readonly path: string;
 
-  constructor(method: HttpMethod, path: string, cause: unknown) {
-    super(`네이버 검색광고 API 요청 실패 — ${method} ${path}: ${describe(cause)}`);
+  constructor(method: HttpMethod, path: string, cause: unknown, secrets: readonly string[] = []) {
+    super(
+      `네이버 검색광고 API 요청 실패 — ${method} ${path}: ${redactSecrets(describe(cause), secrets)}`,
+    );
     this.name = 'NaverAdsTransportError';
     this.method = method;
     this.path = path;

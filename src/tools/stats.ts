@@ -30,11 +30,15 @@ export function registerStatTools(server: McpServer, client: NaverAdsClient): vo
       timeIncrement: z
         .enum(['allDays', '1'])
         .default('allDays')
-        .describe('allDays=기간 합계, 1=일별 추이.'),
+        .describe(
+          'allDays=기간 합계, 1=일별 추이. 1은 계정에 따라 "지원하지 않는 기능입니다"(400)로 거부될 수 있습니다. 거부되면 allDays로 다시 부르세요.',
+        ),
       breakdown: z
         .enum(BREAKDOWNS)
         .optional()
-        .describe('분해 축. pcMblTp=PC/모바일, dayw=요일, hh24=시간대, regnNo=지역.'),
+        .describe(
+          '분해 축. pcMblTp=PC/모바일, dayw=요일, hh24=시간대, regnNo=지역. 최근 7일 이내 기간에서만 쓸 수 있습니다.',
+        ),
       customerId: customerIdArg,
     }),
     run: ({ ids, fields, since, until, datePreset, timeIncrement, breakdown, customerId }) => {
@@ -48,8 +52,11 @@ export function registerStatTools(server: McpServer, client: NaverAdsClient): vo
       return client.get(
         '/stats',
         {
+          // ids는 콤마 조인, fields는 JSON 배열 — /stats는 둘을 다르게 받는다.
+          // ids를 JSON으로 보내면 "유효하지 않은 ID 형식입니다"(400, code 11001),
+          // fields를 콤마로 보내면 "fields 파라미터 파싱 실패"가 난다.
           // 단건이어도 ids로 보낸다 — 응답 형태가 일관돼 모델이 파싱하기 쉽다.
-          ids: JSON.stringify(ids),
+          ids,
           fields: JSON.stringify(fields),
           timeIncrement,
           ...(since && until ? { timeRange: JSON.stringify({ since, until }) } : {}),

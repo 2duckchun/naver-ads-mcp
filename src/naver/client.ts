@@ -1,5 +1,5 @@
 import type { NaverAdsConfig } from '../config.js';
-import { NaverAdsApiError, NaverAdsTransportError } from './errors.js';
+import { NaverAdsApiError, NaverAdsTransportError, redactSecrets } from './errors.js';
 import { buildAuthHeaders, type HttpMethod } from './signature.js';
 
 /** 쿼리스트링에 실을 수 있는 값. 배열은 콤마 조인, 객체는 JSON 직렬화된다. */
@@ -31,6 +31,11 @@ export class NaverAdsClient {
 
   get defaultCustomerId(): string {
     return this.config.customerId;
+  }
+
+  /** 에러 메시지에서 지워야 할 값. 설정을 아는 곳이 여기뿐이라 여기서 넘긴다. */
+  private get secrets(): readonly string[] {
+    return [this.config.apiKey, this.config.secretKey];
   }
 
   async get<T = unknown>(
@@ -118,7 +123,7 @@ export class NaverAdsClient {
     try {
       response = await fetch(url, init);
     } catch (cause) {
-      throw new NaverAdsTransportError(method, path, cause);
+      throw new NaverAdsTransportError(method, path, cause, this.secrets);
     }
 
     const text = await response.text();
@@ -132,9 +137,11 @@ export class NaverAdsClient {
         status: response.status,
         transactionId: response.headers.get('X-Transaction-ID') ?? undefined,
         code: asScalar(payload.code),
-        title: asString(payload.title),
-        detail: asString(payload.detail) ?? asString(payload.message),
-        rawBody: parsed === undefined ? truncate(text) : undefined,
+        // 네이버가 응답 본문에 되돌려준 키를 그대로 실어 나르지 않는다.
+        title: redactSecrets(asString(payload.title), this.secrets),
+        detail: redactSecrets(asString(payload.detail) ?? asString(payload.message), this.secrets),
+        rawBody:
+          parsed === undefined ? redactSecrets(asString(truncate(text)), this.secrets) : undefined,
       });
     }
 

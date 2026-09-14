@@ -8,7 +8,7 @@ export const customerIdArg = z
   .string()
   .regex(/^\d+$/, 'customerId는 숫자 문자열이어야 합니다.')
   .optional()
-  .describe('조회할 광고계정 CUSTOMER_ID. 생략하면 NAVER_ADS_CUSTOMER_ID를 사용합니다.');
+  .describe('조회할 광고계정 CUSTOMER_ID. 생략하면 NAVER_SA_CUSTOMER_ID를 사용합니다.');
 
 /** `/stats`가 지원하는 지표. */
 export const STAT_FIELDS = [

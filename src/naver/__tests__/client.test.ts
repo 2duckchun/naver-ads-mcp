@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { NaverAdsConfig } from '../../config.js';
 import { NaverAdsClient } from '../client.js';
-import { NaverAdsApiError } from '../errors.js';
+import { NaverAdsApiError, REDACTED } from '../errors.js';
 import { buildSignature } from '../signature.js';
 
 const config: NaverAdsConfig = {
@@ -23,6 +23,17 @@ function mockFetch(response: Response) {
 afterEach(() => {
   vi.unstubAllGlobals();
 });
+
+/** 던져진 NaverAdsApiError를 타입이 살아있는 채로 받는다. */
+async function captureApiError(promise: Promise<unknown>): Promise<NaverAdsApiError> {
+  try {
+    await promise;
+  } catch (error) {
+    if (error instanceof NaverAdsApiError) return error;
+    throw error;
+  }
+  throw new Error('NaverAdsApiError가 던져지지 않았습니다.');
+}
 
 describe('NaverAdsClient', () => {
   it('서명에는 쿼리스트링을 제외한 경로만 쓴다', async () => {
@@ -91,6 +102,48 @@ describe('NaverAdsClient', () => {
       code: 1001,
       transactionId: 'tx-1',
     });
+  });
+
+  it('응답 본문에 되돌아온 자격증명을 가린다', async () => {
+    const secretConfig: NaverAdsConfig = {
+      ...config,
+      apiKey: '0100000000aaaabbbbccccddddeeeeffff',
+      secretKey: 'AQAAAAA1111122222333334444455555',
+    };
+    mockFetch(
+      new Response(
+        JSON.stringify({
+          title: 'Invalid API-KEY',
+          detail: `API-KEY '${secretConfig.apiKey}' is invalid.`,
+        }),
+        { status: 403 },
+      ),
+    );
+
+    const error = await captureApiError(new NaverAdsClient(secretConfig).get('/ncc/campaigns'));
+
+    expect(error.detail).toBe("API-KEY '***' is invalid.");
+    expect(JSON.stringify(error.toJSON())).not.toContain(secretConfig.apiKey);
+    expect(JSON.stringify(error.toJSON())).not.toContain(secretConfig.secretKey);
+  });
+
+  it('JSON이 아닌 본문(rawBody)에서도 자격증명을 가린다', async () => {
+    const secretConfig: NaverAdsConfig = { ...config, apiKey: 'AAAA1111BBBB2222' };
+    mockFetch(new Response(`<html>bad key AAAA1111BBBB2222</html>`, { status: 500 }));
+
+    const error = await captureApiError(new NaverAdsClient(secretConfig).get('/ncc/campaigns'));
+
+    expect(error.rawBody).not.toContain(secretConfig.apiKey);
+    expect(error.rawBody).toContain(REDACTED);
+  });
+
+  it('짧은 값은 본문을 훼손하므로 가리지 않는다', async () => {
+    mockFetch(new Response(JSON.stringify({ detail: 'secret key is invalid' }), { status: 403 }));
+
+    const error = await captureApiError(new NaverAdsClient(config).get('/ncc/campaigns'));
+
+    // config.secretKey는 'secret' — 6자라 경계 아래다.
+    expect(error.detail).toBe('secret key is invalid');
   });
 
   it('429는 maxRetries만큼 재시도한다', async () => {
