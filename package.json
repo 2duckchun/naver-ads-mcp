@@ -23,9 +23,6 @@
   "bugs": {
     "url": "https://github.com/2duckchun/naver-ads-mcp/issues"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -50,7 +47,6 @@
     "test:watch": "vitest",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js",
-    "prepublishOnly": "pnpm run check",
     "prepare": "tsup"
   },
   "dependencies": {

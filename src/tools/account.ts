@@ -19,9 +19,12 @@ export function registerAccountTools(server: McpServer, client: NaverAdsClient):
     name: 'list_customer_links',
     title: '연결된 광고계정 조회',
     description:
-      '대행사·광고주 간 연결된 광고계정 목록을 조회합니다. 여기서 얻은 customerId를 다른 툴의 customerId 인자로 넘겨 여러 계정을 오갈 수 있습니다.',
+      '대행사 계정에 연결된 광고주 계정 목록을 조회합니다. 여기서 얻은 customerId를 다른 툴의 customerId 인자로 넘겨 여러 계정을 오갈 수 있습니다. 대행사(매니저) 계정에서만 쓸 수 있고, 일반 광고주 계정으로 부르면 본문 없는 404가 돌아옵니다.',
     inputSchema: z.object({
-      type: z.string().optional().describe('연결 유형 필터. 생략하면 전체를 조회합니다.'),
+      type: z
+        .string()
+        .optional()
+        .describe('연결 유형 필터. 대행사가 관리하는 광고주 목록은 MYCLIENTS입니다.'),
       customerId: customerIdArg,
     }),
     run: ({ type, customerId }) => client.get('/customer-links', { type }, { customerId }),

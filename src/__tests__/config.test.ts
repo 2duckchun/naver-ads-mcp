@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../config.js';
 
 const valid = {
-  NAVER_ADS_API_KEY: 'key',
-  NAVER_ADS_SECRET_KEY: 'secret',
-  NAVER_ADS_CUSTOMER_ID: '1234567',
+  NAVER_SA_API_KEY: 'key',
+  NAVER_SA_SECRET_KEY: 'secret',
+  NAVER_SA_CUSTOMER_ID: '1234567',
 } satisfies NodeJS.ProcessEnv;
 
 describe('loadConfig', () => {
@@ -21,10 +21,10 @@ describe('loadConfig', () => {
   });
 
   it('빠진 변수를 한 번에 모아 알려준다', () => {
-    expect(() => loadConfig({})).toThrow(/NAVER_ADS_API_KEY[\s\S]*NAVER_ADS_CUSTOMER_ID/);
+    expect(() => loadConfig({})).toThrow(/NAVER_SA_API_KEY[\s\S]*NAVER_SA_CUSTOMER_ID/);
   });
 
   it('customerId가 숫자가 아니면 거부한다', () => {
-    expect(() => loadConfig({ ...valid, NAVER_ADS_CUSTOMER_ID: 'abc' })).toThrow(/숫자/);
+    expect(() => loadConfig({ ...valid, NAVER_SA_CUSTOMER_ID: 'abc' })).toThrow(/숫자/);
   });
 });

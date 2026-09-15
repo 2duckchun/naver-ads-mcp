@@ -23,22 +23,22 @@ const HELP = `${SERVER_NAME} v${SERVER_VERSION}
   -v, --version   버전을 출력합니다.
 
 필수 환경변수
-  NAVER_ADS_API_KEY       액세스라이선스
-  NAVER_ADS_SECRET_KEY    비밀키
-  NAVER_ADS_CUSTOMER_ID   광고계정 ID (숫자)
+  NAVER_SA_API_KEY       액세스라이선스
+  NAVER_SA_SECRET_KEY    비밀키
+  NAVER_SA_CUSTOMER_ID   광고계정 ID (숫자)
 
   광고시스템(https://manage.searchad.naver.com) > 도구 > API 사용 관리에서 발급합니다.
 
 선택 환경변수
-  NAVER_ADS_BASE_URL      기본값 https://api.searchad.naver.com
-  NAVER_ADS_TIMEOUT_MS    기본값 15000
-  NAVER_ADS_MAX_RETRIES   기본값 2
+  NAVER_SA_BASE_URL      기본값 https://api.searchad.naver.com
+  NAVER_SA_TIMEOUT_MS    기본값 15000
+  NAVER_SA_MAX_RETRIES   기본값 2
 
 Claude Code에 등록
   claude mcp add naver-ads \\
-    --env NAVER_ADS_API_KEY=... \\
-    --env NAVER_ADS_SECRET_KEY=... \\
-    --env NAVER_ADS_CUSTOMER_ID=... \\
+    --env NAVER_SA_API_KEY=... \\
+    --env NAVER_SA_SECRET_KEY=... \\
+    --env NAVER_SA_CUSTOMER_ID=... \\
     -- npx -y github:2duckchun/naver-ads-mcp
 
 문서: https://github.com/2duckchun/naver-ads-mcp

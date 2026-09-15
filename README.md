@@ -11,7 +11,7 @@
 
 ## 빠른 시작
 
-npm 발행 없이 이 저장소에서 바로 받아 씁니다. 별도 설치 단계는 없고, MCP 클라이언트가 알아서 프로세스를 띄웁니다.
+이 저장소에서 바로 받아 씁니다. 별도 설치 단계는 없고, MCP 클라이언트가 알아서 프로세스를 띄웁니다.
 
 ```bash
 npx -y github:2duckchun/naver-ads-mcp --help
@@ -27,14 +27,14 @@ npx -y github:2duckchun/naver-ads-mcp#v0.1.0 --help
 
 MCP 클라이언트 설정의 `env`로 넘깁니다(아래 등록 예시 참고). 로컬에서 소스를 직접 돌릴 때는 `.env.example`을 복사해 씁니다.
 
-| 변수                    | 필수 | 기본값                           | 설명                              |
-| ----------------------- | :--: | -------------------------------- | --------------------------------- |
-| `NAVER_ADS_API_KEY`     |  ●   |                                  | 액세스라이선스                    |
-| `NAVER_ADS_SECRET_KEY`  |  ●   |                                  | 비밀키                            |
-| `NAVER_ADS_CUSTOMER_ID` |  ●   |                                  | 광고계정 ID (숫자)                |
-| `NAVER_ADS_BASE_URL`    |      | `https://api.searchad.naver.com` | API 베이스 URL                    |
-| `NAVER_ADS_TIMEOUT_MS`  |      | `15000`                          | 요청 타임아웃                     |
-| `NAVER_ADS_MAX_RETRIES` |      | `2`                              | 429·5xx·네트워크 오류 재시도 횟수 |
+| 변수                   | 필수 | 기본값                           | 설명                              |
+| ---------------------- | :--: | -------------------------------- | --------------------------------- |
+| `NAVER_SA_API_KEY`     |  ●   |                                  | 액세스라이선스                    |
+| `NAVER_SA_SECRET_KEY`  |  ●   |                                  | 비밀키                            |
+| `NAVER_SA_CUSTOMER_ID` |  ●   |                                  | 광고계정 ID (숫자)                |
+| `NAVER_SA_BASE_URL`    |      | `https://api.searchad.naver.com` | API 베이스 URL                    |
+| `NAVER_SA_TIMEOUT_MS`  |      | `15000`                          | 요청 타임아웃                     |
+| `NAVER_SA_MAX_RETRIES` |      | `2`                              | 429·5xx·네트워크 오류 재시도 횟수 |
 
 값이 비었거나 형식이 틀리면 기동 시 **어떤 변수가 문제인지 한 번에** stderr로 출력하고 종료합니다.
 
@@ -44,9 +44,9 @@ MCP 클라이언트 설정의 `env`로 넘깁니다(아래 등록 예시 참고)
 
 ```bash
 claude mcp add naver-ads \
-  --env NAVER_ADS_API_KEY=... \
-  --env NAVER_ADS_SECRET_KEY=... \
-  --env NAVER_ADS_CUSTOMER_ID=... \
+  --env NAVER_SA_API_KEY=... \
+  --env NAVER_SA_SECRET_KEY=... \
+  --env NAVER_SA_CUSTOMER_ID=... \
   -- npx -y github:2duckchun/naver-ads-mcp
 ```
 
@@ -59,9 +59,9 @@ claude mcp add naver-ads \
       "command": "npx",
       "args": ["-y", "github:2duckchun/naver-ads-mcp"],
       "env": {
-        "NAVER_ADS_API_KEY": "...",
-        "NAVER_ADS_SECRET_KEY": "...",
-        "NAVER_ADS_CUSTOMER_ID": "..."
+        "NAVER_SA_API_KEY": "...",
+        "NAVER_SA_SECRET_KEY": "...",
+        "NAVER_SA_CUSTOMER_ID": "..."
       }
     }
   }
@@ -92,7 +92,9 @@ claude mcp add naver-ads \
 | `list_customer_links`    | `GET /customer-links`            | 연결된 광고계정                    |
 | `naver_ads_get`          | (임의 GET)                       | 전용 툴이 없는 엔드포인트용 탈출구 |
 
-`get_stats`는 `ids`에 `nccCampaignId` / `nccAdgroupId` / `nccKeywordId` / `nccAdId`를 섞어 받고, 기간은 `since`+`until` 또는 `datePreset` 중 하나로 지정합니다. `breakdown`으로 PC/모바일·요일·시간대·지역별 분해가 가능합니다.
+`get_stats`는 `ids`에 `nccCampaignId` / `nccAdgroupId` / `nccKeywordId` / `nccAdId`를 섞어 받고, 기간은 `since`+`until` 또는 `datePreset` 중 하나로 지정합니다. 둘 다 생략하면 네이버 기본 기간이 적용됩니다. `breakdown`으로 PC/모바일·요일·시간대·지역별 분해가 가능합니다.
+
+> `/stats`는 `ids`를 **콤마 조인**으로, `fields`를 **JSON 배열**로 받습니다. 한쪽 형식을 반대로 보내면 전체가 400입니다(`ids` → `유효하지 않은 ID 형식입니다`, `fields` → `fields 파라미터 파싱 실패`). 이 비대칭은 `src/tools/__tests__/stats.test.ts`로 고정해 두었습니다.
 
 ## 인증 방식
 
@@ -169,48 +171,17 @@ pnpm check          # typecheck + lint + test
 pnpm inspect        # MCP Inspector로 툴 확인 (pnpm build 후)
 ```
 
-## 배포
-
-저장소에 푸시하는 것이 곧 배포입니다.
-
-```bash
-git push
-git tag v0.1.0 && git push --tags   # 버전 고정용 태그 (선택)
-```
-
-`dist/`는 저장소에 커밋하지 않습니다. `npx github:...`가 실행될 때 npm이 저장소를 클론하고 devDependencies를 설치한 뒤 `prepare` 스크립트(`tsup`)를 돌려 빌드하고, `files` 필드에 따라 `dist/`만 담은 패키지를 설치합니다.
-
-| | 소요 |
-| --- | --- |
-| 최초 실행 (클론 + 의존성 설치 + 빌드) | 약 15초 |
-| 이후 실행 (npm이 빌드 결과를 캐시) | 1초 미만 |
-
-빌드 산출물이 캐시되므로 MCP 클라이언트가 서버를 띄울 때마다 15초를 기다리지는 않습니다. 다만 커밋 해시가 바뀌면 다시 빌드합니다.
-
-<details>
-<summary>npm 레지스트리에 발행하려면</summary>
-
-`prepublishOnly`가 typecheck·lint·test를 통과시킨 뒤에야 발행되도록 되어 있습니다.
-
-```bash
-npm login
-npm version patch
-npm publish
-```
-
-담기는 파일은 `npm pack --dry-run`으로 확인할 수 있습니다. 현재 `dist/`, `README.md`, `LICENSE`, `package.json` 5개입니다.
-
-</details>
-
 ## 알려진 제약
 
-- 저장소가 **public**이어야 `npx github:...`가 인증 없이 받아갑니다. private으로 바꾸면 `git+ssh://git@github.com/2duckchun/naver-ads-mcp.git` 형태로 SSH 키 인증을 태워야 합니다.
+- `get_stats`의 `timeIncrement: '1'`(일별 추이)은 `/stats`에서 "지원하지 않는 기능입니다"(400)로 거부될 수 있습니다. 일별 데이터는 대용량 리포트(`/stat-reports`) 쪽 기능입니다.
+- `get_stats`의 `breakdown`은 **최근 7일 이내** 기간에서만 동작합니다. 더 긴 기간과 함께 쓰면 400입니다.
+- `list_customer_links`는 **대행사(매니저) 계정 전용**입니다. 일반 광고주 계정으로 부르면 본문 없는 404가 돌아옵니다.
 - 목록 조회 툴의 선택 파라미터는 확실한 것만 노출했습니다. 페이지네이션(`baseSearchId`, `recordSize`)이나 `selector` 같은 파라미터가 필요하면 `naver_ads_get`으로 우회하세요.
 - 응답은 타입 없이 그대로 통과시킵니다. 도메인 타입은 필요한 시점에 붙이는 편이 낫다고 판단했습니다.
 
 ## 다음 단계 후보
 
-- 쓰기 툴 (`POST`/`PUT`/`DELETE`) — `NAVER_ADS_ALLOW_WRITE` 같은 안전장치와 함께
+- 쓰기 툴 (`POST`/`PUT`/`DELETE`) — `NAVER_SA_ALLOW_WRITE` 같은 안전장치와 함께
 - 대용량 리포트 (`/stat-reports`, `/master-reports`) — 잡 생성 → 폴링 → 다운로드
 - 입찰가 추정 (`/estimate/*`)
 - 자주 쓰는 분석 절차를 MCP Prompt로 제공
