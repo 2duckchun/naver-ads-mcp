@@ -164,11 +164,49 @@ cp .env.example .env   # 발급받은 키 입력
 
 ```bash
 pnpm dev            # tsx로 직접 실행 (.env 있으면 자동 로드)
+pnpm build          # dist/ 재생성
 pnpm test           # vitest
 pnpm lint           # biome check (린트 + 포맷 + import 정렬)
 pnpm lint:fix       # 자동 수정
 pnpm check          # typecheck + lint + test
 pnpm inspect        # MCP Inspector로 툴 확인 (pnpm build 후)
+```
+
+### dist 는 저장소에 커밋됩니다
+
+빌드 산출물 `dist/` 를 추적하고, 설치 시점에 빌드하던 `prepare` 스크립트는 두지 않습니다.
+설치 경로가 빌드 툴체인에 의존하지 않게 하려는 것입니다.
+
+그래서 **`src/` 를 고쳤으면 `pnpm build` 후 `dist/` 도 함께 커밋해야 합니다.**
+CI 가 `pnpm build` 를 돌린 뒤 `git diff --exit-code -- dist` 로 어긋남을 막습니다.
+
+### 설치 경로별 동작
+
+node 22 / npm 10.9.8 기준으로 확인했습니다.
+
+| 방법                                                      | 결과                        |
+| --------------------------------------------------------- | --------------------------- |
+| `npx -y github:2duckchun/naver-ads-mcp`                     | 정상                        |
+| `npm install github:2duckchun/naver-ads-mcp` (로컬)         | 정상                        |
+| `git clone` → `npm pack` → `npm install -g <tarball>`       | 정상                        |
+| `npm install -g github:2duckchun/naver-ads-mcp`             | **깨짐** — 아래 참고        |
+
+`npm install -g` 에 git 주소를 직접 주면 npm 이 전역 `node_modules` 항목을 npm 캐시
+안의 임시 클론 디렉터리(`_cacache/tmp/git-clone*`)로 심링크합니다. 그 디렉터리는 설치
+직후 지워지므로 링크가 끊기고, 종료코드는 0인데 실행파일은 없는 상태가 됩니다.
+
+이건 이 패키지에 국한된 문제가 아닙니다. 무관한 저장소(`github:isaacs/rimraf`)도 `-g`
+로는 실패합니다(이쪽은 exit 127). npm 10.x 의 git 스펙 + `-g` 조합 문제로 보이며,
+`dist` 를 커밋해도 이 경로는 살아나지 않습니다.
+
+Docker 이미지에 넣는다면 tarball 경로를 쓰세요. `dist` 가 커밋되어 있으므로 클론에
+빌드 툴체인이 필요 없고, 설치 후 클론을 지워도 실행파일이 남습니다.
+
+```dockerfile
+RUN git clone --depth 1 --branch v0.1.0 \
+      https://github.com/2duckchun/naver-ads-mcp.git /src \
+ && cd /src && npm install -g "$(npm pack | tail -1)" \
+ && rm -rf /src
 ```
 
 ## 알려진 제약
