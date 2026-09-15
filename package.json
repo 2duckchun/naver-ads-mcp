@@ -1,5 +1,6 @@
 {
   "name": "naver-ads-mcp",
+  "packageManager": "pnpm@10.8.1",
   "version": "0.1.0",
   "description": "네이버 검색광고 API를 감싼 stdio MCP 서버 (Naver Search Ad API MCP server)",
   "type": "module",
@@ -46,8 +47,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js",
-    "prepare": "tsup"
+    "inspect": "npx -y @modelcontextprotocol/inspector node dist/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
@@ -60,5 +60,10 @@
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

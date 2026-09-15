@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm check
+
+      # dist/ 는 저장소에 커밋된다. 설치 시점 빌드(prepare)를 없앴기 때문에
+      # src 와 dist 가 어긋난 채 머지되면 사용자가 옛 코드를 받게 된다.
+      - name: dist 가 src 와 동기화되어 있는지 확인
+        run: |
+          pnpm build
+          if ! git diff --exit-code -- dist; then
+            echo "::error::dist/ 가 src 와 어긋났습니다. 로컬에서 'pnpm build' 후 dist/ 를 커밋하세요."
+            exit 1
+          fi
